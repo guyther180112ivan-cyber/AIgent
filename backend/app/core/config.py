@@ -9,8 +9,8 @@ class Settings(BaseSettings):
     app_version: str = "1.0.0"
     debug: bool = False
     
-    # Database
-    database_url: str = "postgresql://user:password@localhost/agent_db"
+    # Database (SQLite by default for easy deployment)
+    database_url: str = "sqlite:///./aigent.db"
     
     # Security
     secret_key: str = "your-secret-key-change-in-production"
@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30 * 24 * 60  # 30 days
     
     # CORS
-    allowed_origins: List[str] = ["http://localhost:3000"]
+    allowed_origins: List[str] = ["http://localhost:3000", "https://*.onrender.com"]
     
     # LLM
     openrouter_api_key: Optional[str] = None

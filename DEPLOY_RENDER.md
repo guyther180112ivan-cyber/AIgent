@@ -1,117 +1,81 @@
-# Деплой AIgent на Render
+# Деплой AIgent на Render (Упрощённый)
 
 ## Требования
 
 - Аккаунт на [render.com](https://render.com)
-- Репозиторий на GitHub с проектом
+- Репозиторий на GitHub
 
-## Шаги
+## Быстрый деплой (один сервис, SQLite)
 
-### 1. Подготовка репозитория
-
-Убедитесь что в корне проекта есть:
-- `backend/Dockerfile` - для Python/FastAPI
-- `frontend/Dockerfile` - для Next.js
-- `docker-compose.yml` - для оркестрации
-
-### 2. Создание Web Services на Render
-
-#### Backend (FastAPI)
+### 1. Создайте Web Service на Render
 
 1. Войдите в [Render Dashboard](https://dashboard.render.com)
 2. Нажмите **New +** → **Web Service**
 3. Подключите ваш GitHub репозиторий
 4. Настройте:
-   - **Name**: `aigent-backend`
-   - **Root Directory**: `backend`
-   - **Build Command**: `pip install -r requirements.txt`
+   - **Name**: `aigent`
+   - **Root Directory**: оставьте пустым (корень репозитория)
+   - **Build Command**: (оставьте пустым - используется Dockerfile)
    - **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
    - **Environment**: `Python 3.11`
 
-5. Добавьте переменные окружения:
-   ```
-   DATABASE_URL=postgresql://user:pass@host:5432/aigent
-   REDIS_URL=redis://host:6379
-   SECRET_KEY=your-secret-key
-   OPENAI_API_KEY=your-openai-key
-   OPENROUTER_API_KEY=your-openrouter-key
-   TELEGRAM_BOT_TOKEN=your-telegram-token
-   ```
+### 2. Добавьте переменные окружения
 
-6. Нажмите **Create Web Service**
+Нажмите **Advanced** → **Add Environment Variables**:
 
-#### Frontend (Next.js)
-
-1. Нажмите **New +** → **Web Service**
-2. Подключите репозиторий
-3. Настройте:
-   - **Name**: `aigent-frontend`
-   - **Root Directory**: `frontend`
-   - **Build Command**: `npm install && npm run build`
-   - **Start Command**: `npm run start`
-   - **Environment**: `Node`
-
-4. Добавьте переменные окружения:
-   ```
-   NEXT_PUBLIC_API_URL=https://aigent-backend.onrender.com
-   NEXT_PUBLIC_WS_URL=wss://aigent-backend.onrender.com
-   ```
-
-### 3. Использование PostgreSQL и Redis
-
-1. **PostgreSQL**:
-   - Нажмите **New +** → **PostgreSQL**
-   - Выберите план (Free: $0)
-   - Скопируйте Internal Database URL в переменные окружения backend
-
-2. **Redis** (опционально):
-   - Нажмите **New +** → **Redis**
-   - Выберите план Free
-   - Скопируйте URL в переменные окружения
-
-### 4. Настройка CORS
-
-В `backend/app/main.py` добавьте домен фронтенда:
-```python
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["https://aigent-frontend.onrender.com"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+```
+SECRET_KEY=любой-секретный-ключ-минимум-32-символа
+OPENROUTER_API_KEY=ваш-openrouter-api-ключ
+TELEGRAM_BOT_TOKEN=ваш-telegram-токен
+DEBUG=false
 ```
 
-### 5. Обновление Telegram Bot Webhook
+### 3. Нажмите Create Web Service
 
-После деплоя обновите webhook Telegram:
+Дождитесь сборки (может занять 5-10 минут).
+
+## Локальный запуск
+
+```bash
+cd backend
+pip install -r requirements-minimal.txt
+cp .env.example .env
+# Отредактируйте .env файл
+uvicorn app.main:app --reload
 ```
-https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://aigent-backend.onrender.com/api/v1/telegram/webhook
+
+## Переменные окружения
+
+| Переменная | Описание | По умолчанию |
+|------------|----------|--------------|
+| SECRET_KEY | Секретный ключ | сгенерированный |
+| DATABASE_URL | SQLite (файл) | sqlite:///./aigent.db |
+| OPENROUTER_API_KEY | API ключ OpenRouter | - |
+| TELEGRAM_BOT_TOKEN | Токен Telegram бота | - |
+| DEBUG | Режим отладки | false |
+
+## Как это работает
+
+- **SQLite**: база данных создаётся автоматически в файле `aigent.db`
+- **Без Redis**: кэширование в памяти
+- **Один сервис**: фронтенд обслуживается Python/uvicorn (или используйте отдельный хостинг)
+
+## Обновление Telegram Webhook
+
+После деплоя установите webhook:
+```
+https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook?url=https://ваш-сайт.onrender.com/api/v1/telegram/webhook
 ```
 
-### Бесплатные лимиты Render
+## Проблемы и решения
 
-- **Web Services**: 750 часов/месяц (останавливайте сервисы ночью)
-- **PostgreSQL**: 1 БД, 90 дней жизни
-- **Redis**: 30MB, 30 дней жизни
-
-### Альтернатива: один Docker compose
-
-Используйте Render's "Native Docker" с docker-compose.yml напрямую:
-1. **New +** → **Web Service**
-2. **Dockerfile Repository**: включите ваш репозиторий
-3. Render автоматически определит docker-compose.yml
-
-## Устранение проблем
-
-### Ошибка сборки
-- Проверьте логи в Render Dashboard
-- Убедитесь что все зависимости в requirements.txt
-
-### Ошибка подключения к БД
-- Проверьте DATABASE_URL
-- Дождитесь инициализации PostgreSQL (может занять 2-3 минуты)
+### Ошибка 500 при запуске
+- Проверьте переменные окружения в Render Dashboard
 
 ### Telegram не работает
 - Проверьте TELEGRAM_BOT_TOKEN
-- Убедитесь что webhook установлен правильно
+- Убедитесь что webhook установлен
+
+### База данных не сохраняется
+- SQLite файл создаётся в /app/aigent.db
+- На Free плане данные могут быть удалены при перезагрузке

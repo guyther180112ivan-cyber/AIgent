@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './globals.css';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
 interface Message {
   role: 'user' | 'assistant';
   content: string;
@@ -78,7 +80,7 @@ export default function Home() {
 
   const fetchTasks = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/scheduler/tasks', {
+      const response = await fetch(`${API_URL}/api/scheduler/tasks`, {
         headers: {
           'Authorization': 'Bearer dev-token'
         }
@@ -107,7 +109,7 @@ export default function Home() {
         scheduledAtUtc = localDate.toISOString();
       }
 
-      const response = await fetch('http://localhost:8000/api/scheduler/tasks', {
+      const response = await fetch(`${API_URL}/api/scheduler/tasks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -148,7 +150,7 @@ export default function Home() {
 
   const toggleTask = async (id: string, isActive: boolean) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/scheduler/tasks/${id}`, {
+      const response = await fetch(`${API_URL}/api/scheduler/tasks/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -166,7 +168,7 @@ export default function Home() {
 
   const deleteTask = async (id: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/scheduler/tasks/${id}`, {
+      const response = await fetch(`${API_URL}/api/scheduler/tasks/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': 'Bearer dev-token'
