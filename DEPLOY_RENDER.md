@@ -15,7 +15,7 @@
 4. Настройте:
    - **Name**: `aigent`
    - **Root Directory**: оставьте пустым (корень репозитория)
-   - **Build Command**: (оставьте пустым - используется Dockerfile)
+   - **Build Command**: `echo "Using Dockerfile"`
    - **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
    - **Environment**: `Python 3.11`
 

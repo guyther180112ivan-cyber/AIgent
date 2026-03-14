@@ -8,28 +8,32 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Node.js
+# Install Node.js for frontend build
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy backend requirements
-COPY backend/requirements-minimal.txt /app/backend/requirements.txt
+# Copy and install Python dependencies
+COPY backend/requirements-minimal.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r /app/backend/requirements.txt
-
-# Copy frontend
-COPY frontend /app/frontend
+# Copy frontend and build
+COPY frontend/package.json frontend/package-lock.json /app/frontend/
 WORKDIR /app/frontend
-RUN npm install && npm run build
+RUN npm install
+
+COPY frontend /app/frontend
+RUN npm run build
 
 # Copy backend
 WORKDIR /app
 COPY backend /app/backend
 
+# Create uploads directory
+RUN mkdir -p /app/uploads
+
 # Expose port
 EXPOSE 8000
 
-# Run the application (both frontend and backend)
-CMD ["sh", "-c", "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"]
+# Run the application
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
