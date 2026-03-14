@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from typing import List, Optional
+from typing import List, Optional, Union
 import os
 
 
@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30 * 24 * 60  # 30 days
     
     # CORS
-    allowed_origins: List[str] = ["http://localhost:3000", "https://*.onrender.com"]
+    allowed_origins: Union[List[str], str] = ["http://localhost:3000", "https://*.onrender.com"]
     
     # LLM
     openrouter_api_key: Optional[str] = None
@@ -33,16 +33,17 @@ class Settings(BaseSettings):
     tts_provider: str = "openai"
     openai_api_key: Optional[str] = None
     
-    # Redis
-    redis_url: str = "redis://localhost:6379"
+    # Redis (optional)
+    redis_url: Optional[str] = None
     
     # File storage
     upload_dir: str = "uploads"
     max_file_size: int = 10 * 1024 * 1024  # 10MB
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
+    model_config = {
+        "env_file": ".env",
+        "case_sensitive": False,
+    }
 
 
 settings = Settings()

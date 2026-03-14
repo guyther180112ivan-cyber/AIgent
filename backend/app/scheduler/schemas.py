@@ -90,8 +90,8 @@ class ScheduledTaskCreate(ScheduledTaskBase):
     """Schema for creating a scheduled task."""
     agent_id: Optional[str] = Field(None, description="Optional agent ID to use for the task")
     
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "name": "Утреннее приветствие",
                 "description": "Отправляет доброе утро каждый день в 8:00",
@@ -104,6 +104,7 @@ class ScheduledTaskCreate(ScheduledTaskBase):
                 "is_active": True,
             }
         }
+    }
 
 
 class ScheduledTaskUpdate(BaseModel):
@@ -143,8 +144,7 @@ class ScheduledTaskResponse(ScheduledTaskBase):
             return str(v)
         return v
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class ScheduledTaskList(BaseModel):
@@ -167,13 +167,14 @@ class ScheduleParseRequest(BaseModel):
     text: str = Field(..., description="Natural language description of schedule")
     timezone: Optional[str] = Field(default="Europe/Moscow", description="User timezone")
     
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "text": "завтра в 3 утра",
                 "timezone": "Europe/Moscow"
             }
         }
+    }
 
 
 class ScheduleParseResponse(BaseModel):

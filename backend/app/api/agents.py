@@ -36,8 +36,7 @@ class AgentResponse(BaseModel):
     created_at: str
     updated_at: Optional[str]
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class SkillResponse(BaseModel):
@@ -48,8 +47,7 @@ class SkillResponse(BaseModel):
     is_enabled: bool
     config: dict
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class ToolResponse(BaseModel):
@@ -60,8 +58,7 @@ class ToolResponse(BaseModel):
     is_enabled: bool
     config: dict
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class AgentDetailResponse(AgentResponse):
@@ -234,7 +231,7 @@ async def update_agent(
         )
     
     # Update agent fields
-    update_data = agent_data.dict(exclude_unset=True)
+    update_data = agent_data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(agent, field, value)
     

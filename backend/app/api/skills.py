@@ -38,8 +38,7 @@ class SkillResponse(BaseModel):
     created_at: str
     updated_at: Optional[str]
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 # Routes
@@ -170,7 +169,7 @@ async def update_skill(
         )
     
     # Update skill fields
-    update_data = skill_data.dict(exclude_unset=True)
+    update_data = skill_data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(skill, field, value)
     

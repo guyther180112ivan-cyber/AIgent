@@ -27,8 +27,7 @@ class MessageResponse(BaseModel):
     created_at: str
     tool_calls: List[dict] = []
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class ConversationResponse(BaseModel):
@@ -40,8 +39,7 @@ class ConversationResponse(BaseModel):
     updated_at: Optional[str]
     messages: List[MessageResponse] = []
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class ConversationCreate(BaseModel):
