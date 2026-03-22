@@ -1,5 +1,5 @@
-from pydantic_settings import BaseSettings
-from typing import List, Optional, Union
+from pydantic import BaseSettings
+from typing import List, Optional
 import os
 
 
@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30 * 24 * 60  # 30 days
     
     # CORS
-    allowed_origins: Union[List[str], str] = ["http://localhost:3000", "https://*.onrender.com"]
+    allowed_origins: List[str] = ["http://localhost:3000", "https://*.onrender.com"]
     
     # LLM
     openrouter_api_key: Optional[str] = None
@@ -40,10 +40,9 @@ class Settings(BaseSettings):
     upload_dir: str = "uploads"
     max_file_size: int = 10 * 1024 * 1024  # 10MB
     
-    model_config = {
-        "env_file": ".env",
-        "case_sensitive": False,
-    }
+    class Config:
+        env_file = ".env"
+        case_sensitive = False
 
 
 settings = Settings()

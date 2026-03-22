@@ -3,9 +3,9 @@ Pydantic schemas for the scheduler module.
 """
 
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from enum import Enum
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, validator
 
 
 class ScheduleType(str, Enum):
@@ -35,44 +35,37 @@ class TargetType(str, Enum):
 
 class ScheduledTaskBase(BaseModel):
     """Base schema for scheduled tasks."""
-    name: str = Field(..., min_length=1, max_length=200, description="Task name")
-    description: Optional[str] = Field(None, max_length=1000, description="Task description")
-    action_type: ActionType = Field(default=ActionType.TELEGRAM_MESSAGE, description="Type of action")
-    schedule_type: ScheduleType = Field(default=ScheduleType.ONCE, description="Type of scheduling")
+    name: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = Field(None, max_length=1000)
+    action_type: ActionType = Field(default=ActionType.TELEGRAM_MESSAGE)
+    schedule_type: ScheduleType = Field(default=ScheduleType.ONCE)
     
-    # Scheduling
-    scheduled_at: Optional[datetime] = Field(None, description="When to run (for one-time tasks)")
-    cron_expression: Optional[str] = Field(None, max_length=100, description="Cron expression for recurring tasks")
-    interval_minutes: Optional[int] = Field(None, ge=1, description="Interval in minutes for recurring tasks")
+    scheduled_at: Optional[datetime] = Field(None)
+    cron_expression: Optional[str] = Field(None, max_length=100)
+    interval_minutes: Optional[int] = Field(None, ge=1)
     
-    # Task content
-    message_text: Optional[str] = Field(None, description="Message text to send")
-    action_payload: Optional[str] = Field(None, description="JSON string with additional action data")
+    message_text: Optional[str] = Field(None)
+    action_payload: Optional[str] = Field(None)
     
-    # Target
-    target_id: Optional[str] = Field(None, max_length=100, description="Target ID (e.g., Telegram chat_id)")
-    target_type: TargetType = Field(default=TargetType.TELEGRAM, description="Type of target")
+    target_id: Optional[str] = Field(None, max_length=100)
+    target_type: TargetType = Field(default=TargetType.TELEGRAM)
     
-    # Limits
-    is_active: bool = Field(default=True, description="Whether the task is active")
-    max_runs: Optional[int] = Field(None, ge=1, description="Maximum number of runs (null = unlimited)")
+    is_active: bool = Field(default=True)
+    max_runs: Optional[int] = Field(None, ge=1)
 
-    @field_validator('action_type', 'schedule_type', 'target_type', mode='before')
-    @classmethod
-    def parse_enum_from_string(cls, v):
+    @validator('action_type', 'schedule_type', 'target_type', pre=True)
+    def parse_enum(cls, v):
         """Convert string values to enum."""
         if isinstance(v, str):
-            # Try to find matching enum value
-            if 'action_type' in cls.__fields__ and hasattr(ActionType, v.upper()):
+            if v == 'action_type' and hasattr(ActionType, v.upper()):
                 return ActionType[v.upper()]
-            if 'schedule_type' in cls.__fields__ and hasattr(ScheduleType, v.upper()):
+            if 'schedule' in str(cls.__fields__.keys()) and hasattr(ScheduleType, v.upper()):
                 return ScheduleType[v.upper()]
-            if 'target_type' in cls.__fields__ and hasattr(TargetType, v.upper()):
+            if 'target' in str(cls.__fields__.keys()) and hasattr(TargetType, v.upper()):
                 return TargetType[v.upper()]
         return v
 
-    @field_validator('scheduled_at', mode='before')
-    @classmethod
+    @validator('scheduled_at', pre=True)
     def parse_datetime(cls, v):
         """Parse datetime from string."""
         if isinstance(v, str):
@@ -88,23 +81,21 @@ class ScheduledTaskBase(BaseModel):
 
 class ScheduledTaskCreate(ScheduledTaskBase):
     """Schema for creating a scheduled task."""
-    agent_id: Optional[str] = Field(None, description="Optional agent ID to use for the task")
+    agent_id: Optional[str] = Field(None)
     
-    model_config = {
-        "json_schema_extra": {
+    class Config:
+        json_schema_extra = {
             "example": {
                 "name": "Утреннее приветствие",
-                "description": "Отправляет доброе утро каждый день в 8:00",
                 "action_type": "telegram_message",
                 "schedule_type": "daily",
                 "scheduled_at": "2026-03-08T08:00:00",
-                "message_text": "Доброе утро! ☀️ Начнем продуктивный день!",
+                "message_text": "Доброе утро!",
                 "target_id": "123456789",
                 "target_type": "telegram",
                 "is_active": True,
             }
         }
-    }
 
 
 class ScheduledTaskUpdate(BaseModel):
@@ -126,30 +117,28 @@ class ScheduledTaskResponse(ScheduledTaskBase):
     user_id: str
     agent_id: Optional[str] = None
     
-    # Runtime info
     last_run_at: Optional[datetime] = None
     next_run_at: Optional[datetime] = None
     run_count: int = 0
     is_completed: bool = False
     
-    # Timestamps
     created_at: datetime
     updated_at: Optional[datetime] = None
     
-    @field_validator('id', 'user_id', mode='before')
-    @classmethod
-    def convert_uuid_to_str(cls, v):
+    @validator('id', 'user_id', pre=True)
+    def convert_uuid(cls, v):
         """Convert UUID to string."""
         if hasattr(v, '__str__'):
             return str(v)
         return v
     
-    model_config = {"from_attributes": True}
+    class Config:
+        from_attributes = True
 
 
 class ScheduledTaskList(BaseModel):
     """Schema for list of scheduled tasks."""
-    items: list[ScheduledTaskResponse]
+    items: List[ScheduledTaskResponse]
     total: int
 
 
@@ -165,16 +154,15 @@ class TaskExecutionResult(BaseModel):
 class ScheduleParseRequest(BaseModel):
     """Request to parse natural language schedule."""
     text: str = Field(..., description="Natural language description of schedule")
-    timezone: Optional[str] = Field(default="Europe/Moscow", description="User timezone")
+    timezone: Optional[str] = Field(default="Europe/Moscow")
     
-    model_config = {
-        "json_schema_extra": {
+    class Config:
+        json_schema_extra = {
             "example": {
                 "text": "завтра в 3 утра",
                 "timezone": "Europe/Moscow"
             }
         }
-    }
 
 
 class ScheduleParseResponse(BaseModel):

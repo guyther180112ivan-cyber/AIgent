@@ -76,7 +76,7 @@ async def create_task(
 ):
     """Create a new scheduled task."""
     try:
-        task_dict = task_data.model_dump()
+        task_dict = task_data.dict()
         
         # Convert string IDs to UUID if needed
         if task_dict.get("agent_id"):
@@ -84,7 +84,7 @@ async def create_task(
             task_dict["agent_id"] = UUID(task_dict["agent_id"])
             
         task = scheduler.create_task(task_dict, str(current_user.id))
-        return ScheduledTaskResponse.model_validate(task)
+        return ScheduledTaskResponse.from_orm(task)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -101,7 +101,7 @@ async def list_tasks(
     """List all scheduled tasks for the current user."""
     tasks = scheduler.get_user_tasks(str(current_user.id), active_only=active_only)
     return ScheduledTaskList(
-        items=[ScheduledTaskResponse.model_validate(t) for t in tasks],
+        items=[ScheduledTaskResponse.from_orm(t) for t in tasks],
         total=len(tasks)
     )
 
@@ -119,7 +119,7 @@ async def get_task(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found"
         )
-    return ScheduledTaskResponse.model_validate(task)
+    return ScheduledTaskResponse.from_orm(task)
 
 
 @router.put("/tasks/{task_id}", response_model=ScheduledTaskResponse)
@@ -130,7 +130,7 @@ async def update_task(
     scheduler: SchedulerService = Depends(get_scheduler)
 ):
     """Update a scheduled task."""
-    update_dict = updates.model_dump(exclude_unset=True)
+    update_dict = updates.dict(exclude_unset=True)
     
     task = scheduler.update_task(task_id, str(current_user.id), update_dict)
     if not task:
@@ -138,7 +138,7 @@ async def update_task(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found"
         )
-    return ScheduledTaskResponse.model_validate(task)
+    return ScheduledTaskResponse.from_orm(task)
 
 
 @router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -169,7 +169,7 @@ async def pause_task(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found"
         )
-    return ScheduledTaskResponse.model_validate(task)
+    return ScheduledTaskResponse.from_orm(task)
 
 
 @router.post("/tasks/{task_id}/resume", response_model=ScheduledTaskResponse)
