@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from typing import Optional
+import hashlib
+import secrets
 
 from ..core.database import get_db
 from ..core.config import settings
@@ -13,7 +14,23 @@ from pydantic import BaseModel, EmailStr
 
 router = APIRouter()
 security = HTTPBearer()
-pwd_context = CryptContext(schemes=["sha256_crypt"], deprecated="auto")
+
+
+def hash_password(password: str) -> str:
+    """Hash password using SHA256 with salt"""
+    salt = secrets.token_hex(16)
+    hash_obj = hashlib.sha256((salt + password).encode())
+    return f"{salt}${hash_obj.hexdigest()}"
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify password against hash"""
+    try:
+        salt, stored_hash = hashed_password.split("$")
+        hash_obj = hashlib.sha256((salt + plain_password).encode())
+        return hash_obj.hexdigest() == stored_hash
+    except:
+        return False
 
 
 # Pydantic models
@@ -50,12 +67,8 @@ class UserResponse(BaseModel):
 
 
 # Utility functions
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-
 def get_password_hash(password):
-    return pwd_context.hash(password)
+    return hash_password(password)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
