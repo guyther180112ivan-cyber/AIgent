@@ -4,10 +4,10 @@ sqlalchemy==2.0.23
 python-jose==3.3.0
 python-multipart==0.0.6
 pydantic==1.10.13
-pydantic-settings==2.1.0
 email-validator==2.1.0
 python-dotenv==1.0.0
 httpx==0.25.2
 websockets==12.0
+
 
 
