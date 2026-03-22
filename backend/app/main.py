@@ -31,17 +31,13 @@ scheduler_service = None
 async def run_telegram_bot():
     """Run Telegram bot as background task"""
     try:
-        # Add parent directory to path to import telegram_bot
-        parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        if parent_dir not in sys.path:
-            sys.path.insert(0, parent_dir)
-        
         import telegram_bot
         logger.info("Starting Telegram bot...")
         await telegram_bot.main()
+    except ImportError:
+        logger.warning("python-telegram-bot not installed, Telegram bot disabled")
     except Exception as e:
         logger.error(f"Telegram bot error: {e}")
-        raise
 
 
 @asynccontextmanager
