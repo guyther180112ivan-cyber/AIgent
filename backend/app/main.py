@@ -34,10 +34,9 @@ async def run_telegram_bot():
         import telegram_bot
         logger.info("Starting Telegram bot...")
         await telegram_bot.main()
-    except ImportError:
-        logger.warning("python-telegram-bot not installed, Telegram bot disabled")
     except Exception as e:
         logger.error(f"Telegram bot error: {e}")
+        raise
 
 
 @asynccontextmanager
