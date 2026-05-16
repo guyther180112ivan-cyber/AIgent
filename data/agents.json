@@ -1,0 +1,22 @@
+[
+  {
+    "user_id": "95f583af-6cb4-4461-b3b6-43c03b273251",
+    "name": "qwqw",
+    "description": "qwqw",
+    "system_prompt": "Ты - гений математики. Ты должен решать задачи и приводить подробные объяснения. ",
+    "model": "openai/gpt-4o-mini",
+    "is_active": true,
+    "id": "3ad38ce3-a492-4bce-b235-893cb13fb068",
+    "created_at": "2026-05-09T07:15:52.664Z"
+  },
+  {
+    "user_id": "95f583af-6cb4-4461-b3b6-43c03b273251",
+    "name": "цйцй",
+    "description": "цйцй",
+    "system_prompt": "ты профессионал в сфере плавания",
+    "model": "openai/gpt-4o-mini",
+    "is_active": true,
+    "id": "49f5b7ee-2f81-4a3d-8b78-468b2d985b48",
+    "created_at": "2026-05-09T07:41:22.864Z"
+  }
+]
