@@ -1,5 +1,5 @@
 import { AgentContext, AgentModuleInterface } from '@/types';
-import { webSearch, formatSearchResults } from '@/lib/websearch';
+import { webSearch, formatSearchResults, weatherSearch, formatWeatherData } from '@/lib/websearch';
 
 export class WebSearchModule implements AgentModuleInterface {
   name = 'websearch';
@@ -7,7 +7,7 @@ export class WebSearchModule implements AgentModuleInterface {
   async onBeforeMessage(ctx: AgentContext): Promise<AgentContext> {
     const lastUserMessage = ctx.messages[ctx.messages.length - 1]?.content || '';
     const lowerMessage = lastUserMessage.toLowerCase();
-    
+
     const searchIndicators = [
       'найди', 'поиск', 'загугли', 'загуглить', 'погугли',
       'что такое', 'кто такой', 'кто такие', 'что это',
@@ -17,8 +17,8 @@ export class WebSearchModule implements AgentModuleInterface {
       'погода', 'курс', 'цена', 'стоимость',
       'википедия', 'wikipedia',
     ];
-    
-    const needsSearch = searchIndicators.some(indicator => 
+
+    const needsSearch = searchIndicators.some(indicator =>
       lowerMessage.includes(indicator.toLowerCase())
     );
 
@@ -34,18 +34,29 @@ export class WebSearchModule implements AgentModuleInterface {
         }
 
         query = query.substring(0, 200);
+        console.log('[WebSearchModule] Query:', query);
 
-        console.log('[WebSearchModule] Searching for:', query);
-        
+        const extraBlocks: string[] = [];
+
+        const isWeather = lowerMessage.includes('погода') || lowerMessage.includes('weather');
+        if (isWeather) {
+          const weatherResult = await weatherSearch(query);
+          if (weatherResult.success && weatherResult.data) {
+            extraBlocks.push(formatWeatherData(weatherResult.data));
+          }
+        }
+
         const searchResults = await webSearch(query, 5);
-        console.log('[WebSearchModule] Found results:', searchResults.results.length);
+        console.log('[WebSearchModule] Bing results:', searchResults.results.length);
 
         if (searchResults.results.length > 0) {
-          const formattedResults = formatSearchResults(searchResults);
-          
+          extraBlocks.push(formatSearchResults(searchResults));
+        }
+
+        if (extraBlocks.length > 0) {
           return {
             ...ctx,
-            systemPrompt: ctx.systemPrompt + `\n\n## Веб-поиск (выполнен перед ответом):\n${formattedResults}\n\nИспользуй эту актуальную информацию из интернета для ответа.`,
+            systemPrompt: ctx.systemPrompt + `\n\n## Веб-поиск (выполнен перед ответом):\n${extraBlocks.join('\n\n')}\n\nИспользуй эту актуальную информацию из интернета для ответа.`,
           };
         }
       } catch (err) {

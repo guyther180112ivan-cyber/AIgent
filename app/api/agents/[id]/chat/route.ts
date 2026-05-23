@@ -10,6 +10,7 @@ import { LongTermMemoryModule } from '@/modules/memory/long-term-memory';
 import { SkillsModule } from '@/modules/skills';
 import { RAGModule } from '@/modules/rag';
 import { WebSearchModule } from '@/modules/core/websearch-module';
+import { FetchURLModule } from '@/modules/core/fetch-url-module';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Не авторизован' }, { status: 401 });
   }
 
-  const body = await request.json() as { message: string; conversation_id?: string };
+  const body = await request.json() as { message: string; conversation_id?: string; file_contents?: { name: string; content: string }[] };
   if (!body.message?.trim()) {
     return NextResponse.json({ error: 'message обязателен' }, { status: 400 });
   }
@@ -99,12 +100,24 @@ export async function POST(request: NextRequest, { params }: Params) {
     content: body.message,
   });
 
+  const fileBlock = (body.file_contents || [])
+    .map(f => {
+      if (f.content) {
+        return `\n\n[Прикреплённый файл: ${f.name}]\n${f.content}`;
+      }
+      return `\n\n[Прикреплённый файл: ${f.name} — содержимое недоступно]`;
+    })
+    .join('');
+
+  const systemPrompt = (agent.system_prompt || '') + fileBlock;
+
   const runtime = new AgentRuntime()
     .registerModule(new LongTermMemoryModule())
     .registerModule(new SkillsModule())
     .registerModule(new RAGModule())
     .registerModule(new ContextMemoryModule())
-    .registerModule(new WebSearchModule());
+    .registerModule(new WebSearchModule())
+    .registerModule(new FetchURLModule());
 
   try {
     const response = await runtime.processMessage({
@@ -112,7 +125,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       userId: user.id,
       conversationId,
       messages: [{ role: 'user', content: body.message }],
-      systemPrompt: agent.system_prompt || '',
+      systemPrompt,
       metadata: { model: agent.model },
     });
 

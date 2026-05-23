@@ -206,6 +206,16 @@ export interface AgentContext {
   metadata: Record<string, unknown>;
 }
 
+// --- FILE ATTACHMENTS ---
+export interface FileAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  content?: string;
+}
+
 // --- UTILS ---
 export interface JSONSchema {
   type: string;
