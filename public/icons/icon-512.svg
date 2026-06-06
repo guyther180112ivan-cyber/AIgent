@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="64" fill="#0f172a"/>
+  <g transform="translate(256,256)">
+    <circle r="128" fill="none" stroke="#3b82f6" stroke-width="8"/>
+    <circle r="88" fill="none" stroke="#8b5cf6" stroke-width="8"/>
+    <circle r="48" fill="#3b82f6" opacity="0.8"/>
+    <text x="0" y="20" text-anchor="middle" fill="#fff" font-family="system-ui" font-size="52" font-weight="bold">AI</text>
+  </g>
+</svg>

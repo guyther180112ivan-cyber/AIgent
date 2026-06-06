@@ -216,6 +216,25 @@ export interface FileAttachment {
   content?: string;
 }
 
+// --- PUSH NOTIFICATIONS ---
+export interface PushSubscription {
+  endpoint: string;
+  expirationTime?: number | null;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+}
+
+export interface PushNotificationPayload {
+  title: string;
+  body?: string;
+  icon?: string;
+  badge?: string;
+  data?: Record<string, unknown>;
+  vibrate?: number[];
+}
+
 // --- UTILS ---
 export interface JSONSchema {
   type: string;
