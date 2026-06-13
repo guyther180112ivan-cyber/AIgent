@@ -13,7 +13,10 @@ import {
   LogOut,
   ChevronRight,
   X,
+  Download,
+  BellRing,
 } from 'lucide-react';
+import { usePwaInstall, usePushSubscription } from '@/components/PwaRegister';
 
 const NAV_ITEMS = [
   { href: '/agents', label: 'Агенты', icon: Bot },
@@ -37,6 +40,8 @@ interface SidebarProps {
 export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { canInstall, install } = usePwaInstall();
+  const { supported: pushSupported, enabled: pushEnabled, subscribe } = usePushSubscription();
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -107,6 +112,29 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             );
           })}
         </nav>
+
+        {(canInstall || (pushSupported && !pushEnabled)) && (
+          <div className="px-3 space-y-1 md:px-4">
+            {canInstall && (
+              <button
+                onClick={install}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-gray-800"
+              >
+                <Download className="w-4 h-4 flex-shrink-0" />
+                <span>Установить приложение</span>
+              </button>
+            )}
+            {pushSupported && !pushEnabled && (
+              <button
+                onClick={subscribe}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-gray-800"
+              >
+                <BellRing className="w-4 h-4 flex-shrink-0" />
+                <span>Включить уведомления</span>
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="p-3 border-t border-gray-800 md:p-4">
           <div className="flex items-center gap-3 mb-3">
