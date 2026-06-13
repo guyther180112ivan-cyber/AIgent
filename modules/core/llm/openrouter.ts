@@ -2,7 +2,7 @@ import { ChatCompletionMessage, LLMConfig } from '@/types';
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-export const DEFAULT_MODEL = 'openai/gpt-4o-mini';
+export const DEFAULT_MODEL = 'google/gemini-2.0-flash-001';
 
 export interface LLMResponse {
   content: string;
