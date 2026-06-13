@@ -113,28 +113,30 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           })}
         </nav>
 
-        {(canInstall || (pushSupported && !pushEnabled)) && (
-          <div className="px-3 space-y-1 md:px-4">
-            {canInstall && (
-              <button
-                onClick={install}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-gray-800"
-              >
-                <Download className="w-4 h-4 flex-shrink-0" />
-                <span>Установить приложение</span>
-              </button>
-            )}
-            {pushSupported && !pushEnabled && (
-              <button
-                onClick={subscribe}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-gray-800"
-              >
-                <BellRing className="w-4 h-4 flex-shrink-0" />
-                <span>Включить уведомления</span>
-              </button>
-            )}
-          </div>
-        )}
+        <div className="px-3 space-y-1 md:px-4">
+          <button
+            onClick={async () => {
+              if (canInstall) {
+                await install();
+              } else {
+                alert('Откройте меню браузера (⋯ или ↗) и нажмите «Установить приложение» или «На экран Домой»');
+              }
+            }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-gray-800"
+          >
+            <Download className="w-4 h-4 flex-shrink-0" />
+            <span>Установить приложение</span>
+          </button>
+          {pushSupported && !pushEnabled && (
+            <button
+              onClick={subscribe}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-gray-800"
+            >
+              <BellRing className="w-4 h-4 flex-shrink-0" />
+              <span>Включить уведомления</span>
+            </button>
+          )}
+        </div>
 
         <div className="p-3 border-t border-gray-800 md:p-4">
           <div className="flex items-center gap-3 mb-3">
