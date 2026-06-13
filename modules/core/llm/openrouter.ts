@@ -3,7 +3,7 @@ import { ToolDefinition } from '@/modules/core/tools';
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-export const DEFAULT_MODEL = 'meta-llama/llama-3.3-70b-instruct:free';
+export const DEFAULT_MODEL = 'qwen/qwen3-coder:free';
 
 export interface LLMResponse {
   content: string;
@@ -61,6 +61,11 @@ export async function chatCompletion(
 
   if (!response.ok) {
     const errorBody = await response.text();
+    if (response.status === 429) {
+      const retryMatch = errorBody.match(/retry_after_seconds.*?(\d+)/);
+      const retryAfter = retryMatch ? parseInt(retryMatch[1]) : 25;
+      throw new Error(`RATE_LIMIT:${retryAfter}`);
+    }
     throw new Error(`OpenRouter error ${response.status}: ${errorBody}`);
   }
 

@@ -2,7 +2,12 @@ import { AgentContext, ChatCompletionMessage } from '@/types';
 import { chatCompletion, chatCompletionStream, LLMResponse } from '@/modules/core/llm/openrouter';
 import { TOOLS, executeTool, ToolDefinition } from '@/modules/core/tools';
 
-const MAX_TOOL_ROUNDS = 6;
+const MAX_TOOL_ROUNDS = 3;
+const MAX_RETRIES = 3;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 export class AgentRuntime {
   private extraTools: ToolDefinition[] = [];
@@ -18,6 +23,27 @@ export class AgentRuntime {
     return this;
   }
 
+  private async callWithRetry(
+    messages: ChatCompletionMessage[],
+    model: string | undefined,
+    tools: ToolDefinition[]
+  ): Promise<LLMResponse> {
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        return await chatCompletion(messages, { model }, tools);
+      } catch (err: any) {
+        if (err.message?.startsWith('RATE_LIMIT:') && attempt < MAX_RETRIES - 1) {
+          const retryAfter = parseInt(err.message.split(':')[1]) || 25;
+          console.log(`[AgentRuntime] Rate limited, waiting ${retryAfter}s (attempt ${attempt + 1}/${MAX_RETRIES})`);
+          await sleep(retryAfter * 1000);
+          continue;
+        }
+        throw err;
+      }
+    }
+    throw new Error('Max retries exceeded');
+  }
+
   async processMessage(ctx: AgentContext): Promise<LLMResponse> {
     const allTools = [...TOOLS, ...this.extraTools];
 
@@ -27,9 +53,7 @@ export class AgentRuntime {
     ];
 
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-      const response = await chatCompletion(messages, {
-        model: ctx.metadata.model as string | undefined,
-      }, allTools);
+      const response = await this.callWithRetry(messages, ctx.metadata.model as string | undefined, allTools);
 
       if (!response.tool_calls || response.tool_calls.length === 0) {
         return response;
@@ -63,10 +87,7 @@ export class AgentRuntime {
       }
     }
 
-    const finalResponse = await chatCompletion(messages, {
-      model: ctx.metadata.model as string | undefined,
-    }, allTools);
-
+    const finalResponse = await this.callWithRetry(messages, ctx.metadata.model as string | undefined, allTools);
     return finalResponse;
   }
 

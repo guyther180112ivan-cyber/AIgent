@@ -4,15 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Bot, Loader2 } from 'lucide-react';
-
-const MODELS = [
-  { value: 'openai/gpt-4o-mini', label: 'GPT-4o Mini (рекомендуется)' },
-  { value: 'openai/gpt-4o', label: 'GPT-4o' },
-  { value: 'anthropic/claude-3-5-sonnet', label: 'Claude 3.5 Sonnet' },
-  { value: 'anthropic/claude-3-haiku', label: 'Claude 3 Haiku (быстрый)' },
-  { value: 'google/gemini-pro', label: 'Gemini Pro' },
-  { value: 'mistralai/mistral-7b-instruct', label: 'Mistral 7B (бесплатный)' },
-];
+import { MODELS, DEFAULT_MODEL } from '@/lib/models';
 
 export default function NewAgentPage() {
   const router = useRouter();
@@ -26,7 +18,7 @@ export default function NewAgentPage() {
 ## Важные правила памяти:
 - Если пользователь просит "запомни", "запиши", "не забудь" или подобное — сохрани эту информацию, ответив в формате: MEMORY: <то, что нужно запомнить>
 - Пример: Пользователь: "Запомни, что я аллергик на арахис" → Ответ: "Запомнил! MEMORY: пользователь аллергик на арахис"`,
-    model: 'openai/gpt-4o-mini',
+    model: DEFAULT_MODEL,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {

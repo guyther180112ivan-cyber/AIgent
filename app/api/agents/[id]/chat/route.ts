@@ -67,7 +67,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Не авторизован' }, { status: 401 });
   }
 
-  const body = await request.json() as { message: string; conversation_id?: string; file_contents?: { name: string; content: string }[] };
+  const body = await request.json() as { message: string; conversation_id?: string; model?: string; file_contents?: { name: string; content: string }[] };
   if (!body.message?.trim()) {
     return NextResponse.json({ error: 'message обязателен' }, { status: 400 });
   }
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       conversationId,
       messages: [{ role: 'user' as const, content: body.message }],
       systemPrompt,
-      metadata: { model: agent.model },
+      metadata: { model: body.model || agent.model },
     };
 
     const contextModule = new ContextMemoryModule();
@@ -136,8 +136,15 @@ export async function POST(request: NextRequest, { params }: Params) {
       conversation_id: conversationId,
       model: response.model,
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error('[chat/route] Ошибка:', err);
+    if (err.message?.startsWith('RATE_LIMIT:')) {
+      const retryAfter = parseInt(err.message.split(':')[1]) || 30;
+      return NextResponse.json(
+        { error: `Слишком много запросов. Повторите через ${retryAfter} секунд.` },
+        { status: 429 }
+      );
+    }
     return NextResponse.json(
       { error: 'Ошибка обработки сообщения' },
       { status: 500 }

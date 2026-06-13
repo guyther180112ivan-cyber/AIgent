@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     name: body.name,
     description: body.description || '',
     system_prompt: body.system_prompt,
-    model: body.model || 'openai/gpt-4o-mini',
+    model: body.model || 'qwen/qwen3-coder:free',
     is_active: true,
   });
 

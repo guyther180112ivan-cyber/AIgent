@@ -10,5 +10,5 @@ export default async function AgentPage({ params }: Params) {
 
   if (!agent) notFound();
 
-  return <ChatWindow agentId={id} agentName={agent.name} />;
+  return <ChatWindow agentId={id} agentName={agent.name} agentModel={agent.model} />;
 }

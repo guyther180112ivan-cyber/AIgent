@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Bot, User, Trash2, Search, Paperclip, X, FileText } from 'lucide-react';
+import { Send, Loader2, Bot, User, Trash2, Search, Paperclip, X, FileText, ChevronDown } from 'lucide-react';
 import ChatHistory from './ChatHistory';
 import { webSearch, formatSearchResults } from './useWebSearch';
+import { MODELS, getModelLabel } from '@/lib/models';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -20,9 +21,10 @@ interface AttachedFile {
 interface ChatWindowProps {
   agentId: string;
   agentName: string;
+  agentModel: string;
 }
 
-export default function ChatWindow({ agentId, agentName }: ChatWindowProps) {
+export default function ChatWindow({ agentId, agentName, agentModel }: ChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -31,6 +33,7 @@ export default function ChatWindow({ agentId, agentName }: ChatWindowProps) {
   const [conversationId, setConversationId] = useState<string | undefined>();
   const [historyKey, setHistoryKey] = useState(0);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+  const [currentModel, setCurrentModel] = useState(agentModel);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -145,6 +148,7 @@ export default function ChatWindow({ agentId, agentName }: ChatWindowProps) {
         body: JSON.stringify({
           message: messageWithSearch,
           conversation_id: conversationId,
+          model: currentModel,
           has_web_search: !!searchResults,
           file_contents: attachedFiles.map(f => ({ name: f.name, content: f.content })),
         }),
@@ -195,6 +199,17 @@ export default function ChatWindow({ agentId, agentName }: ChatWindowProps) {
     setConversationId(undefined);
   };
 
+  const handleModelChange = async (newModel: string) => {
+    setCurrentModel(newModel);
+    try {
+      await fetch(`/api/agents/${agentId}/update`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: newModel }),
+      });
+    } catch {}
+  };
+
   const loadConversationMessages = async (convId: string) => {
     try {
       const res = await fetch(`/api/agents/${agentId}/chat?conversation_id=${convId}`);
@@ -222,9 +237,20 @@ export default function ChatWindow({ agentId, agentName }: ChatWindowProps) {
           </div>
           <div className="min-w-0">
             <h2 className="text-sm font-semibold text-white truncate">{agentName}</h2>
-            <p className="text-xs text-gray-500">
-              {conversationId ? 'Активная беседа' : 'Новая беседа'}
-            </p>
+            <div className="relative">
+              <select
+                value={currentModel}
+                onChange={(e) => handleModelChange(e.target.value)}
+                className="appearance-none bg-transparent text-xs text-gray-400 hover:text-indigo-400 transition cursor-pointer pr-4 focus:outline-none truncate max-w-[180px] sm:max-w-[260px]"
+              >
+                {MODELS.map((m) => (
+                  <option key={m.value} value={m.value} className="bg-gray-800 text-white">
+                    {m.label}{m.free ? ' [FREE]' : ''}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-3 h-3 text-gray-500 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
