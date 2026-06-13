@@ -83,6 +83,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       agent_id: agentId,
       user_id: user.id,
       title: body.message.substring(0, 50),
+      source: 'user',
     });
     conversationId = conv.id;
   } else {

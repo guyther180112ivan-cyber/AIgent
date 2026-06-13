@@ -37,11 +37,14 @@ export interface AgentUpdate extends Partial<AgentCreate> {
 }
 
 // --- CONVERSATIONS ---
+export type ConversationSource = 'user' | 'scheduled';
+
 export interface Conversation {
   id: string;
   agent_id: string;
   user_id: string;
   title: string;
+  source: ConversationSource;
   created_at: string;
   updated_at: string;
 }
@@ -134,23 +137,26 @@ export interface RAGDocument {
 }
 
 // --- SCHEDULER ---
+export type SchedulePreset = 'hourly' | 'daily' | 'weekly' | 'custom';
+
 export interface ScheduledTask {
   id: string;
   agent_id: string;
   user_id: string;
   name: string;
   description?: string;
+  prompt: string;
   cron_expr: string;
-  action: TaskAction;
+  preset: SchedulePreset;
+  schedule_time?: string;
+  schedule_day?: string;
   is_active: boolean;
+  daily_limit: number;
+  run_count_today: number;
   last_run_at?: string;
   next_run_at?: string;
   created_at: string;
-}
-
-export interface TaskAction {
-  type: 'message' | 'tool';
-  payload: Record<string, unknown>;
+  updated_at: string;
 }
 
 // --- REMINDERS ---
@@ -236,6 +242,7 @@ export interface PushSubscription {
     p256dh: string;
     auth: string;
   };
+  user_id?: string;
 }
 
 export interface PushNotificationPayload {

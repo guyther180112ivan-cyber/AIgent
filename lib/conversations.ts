@@ -8,6 +8,7 @@ export interface Conversation {
   agent_id: string;
   user_id: string;
   title: string;
+  source: 'user' | 'scheduled';
   created_at: string;
   updated_at: string;
 }
@@ -37,6 +38,13 @@ export function getConversationsByAgentId(agentId: string, userId: string): Conv
 export function getConversationById(conversationId: string): Conversation | undefined {
   const convs = readConversations();
   return convs.find(c => c.id === conversationId);
+}
+
+export function getLastConversationForAgent(agentId: string, userId: string): Conversation | undefined {
+  const convs = readConversations();
+  return convs
+    .filter(c => c.agent_id === agentId && c.user_id === userId)
+    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0];
 }
 
 export function createConversation(data: Omit<Conversation, 'id' | 'created_at' | 'updated_at'>): Conversation {

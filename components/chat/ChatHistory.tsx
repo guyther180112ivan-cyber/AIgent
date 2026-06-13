@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, MessageSquare, Plus } from 'lucide-react';
+import { ChevronDown, ChevronRight, MessageSquare, Plus, Clock } from 'lucide-react';
 
 interface Conversation {
   id: string;
   title: string;
+  source?: 'user' | 'scheduled';
   created_at: string;
   updated_at: string;
 }
@@ -99,7 +100,10 @@ export default function ChatHistory({
                       : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
                   }`}
                 >
-                  <div className="truncate">{conv.title || 'Без названия'}</div>
+                  <div className="flex items-center gap-1.5 truncate">
+                    {conv.source === 'scheduled' && <Clock className="w-3 h-3 text-indigo-400 flex-shrink-0" />}
+                    <span className="truncate">{conv.title || 'Без названия'}</span>
+                  </div>
                   <div className="text-xs text-gray-500 mt-0.5">
                     {formatDate(conv.updated_at || conv.created_at)}
                   </div>

@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { PwaRegister } from '@/components/PwaRegister';
+import { ensureSchedulerStarted } from '@/lib/scheduler-init';
 import './globals.css';
+
+ensureSchedulerStarted();
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'] });
 

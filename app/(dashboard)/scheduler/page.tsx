@@ -1,4 +1,5 @@
-import PlaceholderPage from '@/components/ui/PlaceholderPage';
-export default function SchedulerPage() {
-  return <PlaceholderPage title="Расписание задач" />;
+import SchedulerPage from '@/components/scheduler/SchedulerPage';
+
+export default function Scheduler() {
+  return <SchedulerPage />;
 }
