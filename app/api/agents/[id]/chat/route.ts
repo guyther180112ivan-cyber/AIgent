@@ -6,11 +6,6 @@ import { createConversation, getConversationById, updateConversation, getConvers
 import { createMessage, getMessagesByConversationId } from '@/lib/messages';
 import { AgentRuntime } from '@/modules/core/agent-runtime';
 import { ContextMemoryModule } from '@/modules/memory/context-memory';
-import { LongTermMemoryModule } from '@/modules/memory/long-term-memory';
-import { SkillsModule } from '@/modules/skills';
-import { RAGModule } from '@/modules/rag';
-import { WebSearchModule } from '@/modules/core/websearch-module';
-import { FetchURLModule } from '@/modules/core/fetch-url-module';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -111,23 +106,22 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   const systemPrompt = (agent.system_prompt || '') + fileBlock;
 
-  const runtime = new AgentRuntime()
-    .registerModule(new LongTermMemoryModule())
-    .registerModule(new SkillsModule())
-    .registerModule(new RAGModule())
-    .registerModule(new ContextMemoryModule())
-    .registerModule(new WebSearchModule())
-    .registerModule(new FetchURLModule());
+  const runtime = new AgentRuntime();
 
   try {
-    const response = await runtime.processMessage({
+    const ctx = {
       agentId,
       userId: user.id,
       conversationId,
-      messages: [{ role: 'user', content: body.message }],
+      messages: [{ role: 'user' as const, content: body.message }],
       systemPrompt,
       metadata: { model: agent.model },
-    });
+    };
+
+    const contextModule = new ContextMemoryModule();
+    const enrichedCtx = await contextModule.onBeforeMessage(ctx);
+
+    const response = await runtime.processMessage(enrichedCtx);
 
     createMessage({
       conversation_id: conversationId,

@@ -1,4 +1,5 @@
 import { ChatCompletionMessage, LLMConfig } from '@/types';
+import { ToolDefinition } from '@/modules/core/tools';
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
@@ -7,6 +8,11 @@ export const DEFAULT_MODEL = 'meta-llama/llama-3.3-70b-instruct:free';
 export interface LLMResponse {
   content: string;
   model: string;
+  tool_calls?: {
+    id: string;
+    type: 'function';
+    function: { name: string; arguments: string };
+  }[];
   usage?: {
     prompt_tokens: number;
     completion_tokens: number;
@@ -14,13 +20,10 @@ export interface LLMResponse {
   };
 }
 
-/**
- * Выполняет запрос к LLM через OpenRouter API.
- * Используется только на сервере (API Routes / Server Actions).
- */
 export async function chatCompletion(
   messages: ChatCompletionMessage[],
-  config: Partial<LLMConfig> = {}
+  config: Partial<LLMConfig> = {},
+  tools?: ToolDefinition[]
 ): Promise<LLMResponse> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey || apiKey === 'your_openrouter_key') {
@@ -33,6 +36,18 @@ export async function chatCompletion(
 
   const model = config.model || DEFAULT_MODEL;
 
+  const body: Record<string, unknown> = {
+    model,
+    messages,
+    temperature: config.temperature ?? 0.7,
+    max_tokens: config.max_tokens ?? 4096,
+  };
+
+  if (tools && tools.length > 0) {
+    body.tools = tools;
+    body.tool_choice = 'auto';
+  }
+
   const response = await fetch(OPENROUTER_API_URL, {
     method: 'POST',
     headers: {
@@ -41,12 +56,7 @@ export async function chatCompletion(
       'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
       'X-Title': 'AIgent Platform',
     },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature: config.temperature ?? 0.7,
-      max_tokens: config.max_tokens ?? 4096,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -55,16 +65,16 @@ export async function chatCompletion(
   }
 
   const data = await response.json();
+  const choice = data.choices[0];
+
   return {
-    content: data.choices[0]?.message?.content || '',
+    content: choice?.message?.content || '',
     model: data.model,
+    tool_calls: choice?.message?.tool_calls,
     usage: data.usage,
   };
 }
 
-/**
- * Стриминг ответа от LLM (возвращает ReadableStream).
- */
 export async function chatCompletionStream(
   messages: ChatCompletionMessage[],
   config: Partial<LLMConfig> = {}
