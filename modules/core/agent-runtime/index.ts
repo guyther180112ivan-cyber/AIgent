@@ -2,7 +2,7 @@ import { AgentContext, ChatCompletionMessage } from '@/types';
 import { chatCompletion, chatCompletionStream, LLMResponse } from '@/modules/core/llm/openrouter';
 import { TOOLS, executeTool, ToolDefinition } from '@/modules/core/tools';
 
-const MAX_TOOL_ROUNDS = 3;
+const MAX_TOOL_ROUNDS = 0;
 const MAX_RETRIES = 3;
 
 function sleep(ms: number): Promise<void> {
@@ -45,15 +45,15 @@ export class AgentRuntime {
   }
 
   async processMessage(ctx: AgentContext): Promise<LLMResponse> {
-    const allTools = [...TOOLS, ...this.extraTools];
-
     const messages: ChatCompletionMessage[] = [
       { role: 'system', content: ctx.systemPrompt },
       ...ctx.messages,
     ];
 
+    const tools = MAX_TOOL_ROUNDS > 0 ? [...TOOLS, ...this.extraTools] : [];
+
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-      const response = await this.callWithRetry(messages, ctx.metadata.model as string | undefined, allTools);
+      const response = await this.callWithRetry(messages, ctx.metadata.model as string | undefined, tools);
 
       if (!response.tool_calls || response.tool_calls.length === 0) {
         return response;
@@ -87,7 +87,7 @@ export class AgentRuntime {
       }
     }
 
-    const finalResponse = await this.callWithRetry(messages, ctx.metadata.model as string | undefined, allTools);
+    const finalResponse = await this.callWithRetry(messages, ctx.metadata.model as string | undefined, tools);
     return finalResponse;
   }
 
