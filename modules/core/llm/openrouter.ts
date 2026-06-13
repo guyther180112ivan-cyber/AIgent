@@ -3,7 +3,7 @@ import { ToolDefinition } from '@/modules/core/tools';
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-export const DEFAULT_MODEL = 'qwen/qwen3-coder:free';
+export const DEFAULT_MODEL = 'openrouter/free';
 
 export interface LLMResponse {
   content: string;
