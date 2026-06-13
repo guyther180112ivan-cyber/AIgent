@@ -48,8 +48,9 @@ export async function chatCompletion(
   }
 
   const requestedModel = config.model || DEFAULT_MODEL;
-  const modelsToTry = requestedModel === 'openrouter/free'
-    ? FREE_MODELS
+  const isFree = requestedModel.includes(':free');
+  const modelsToTry = isFree
+    ? [requestedModel, ...FREE_MODELS.filter(m => m !== requestedModel)]
     : [requestedModel];
 
   let lastError: Error | null = null;
@@ -135,8 +136,9 @@ export async function chatCompletionStream(
   }
 
   const requestedModel = config.model || DEFAULT_MODEL;
-  const modelsToTry = requestedModel === 'openrouter/free'
-    ? FREE_MODELS
+  const isFree = requestedModel.includes(':free');
+  const modelsToTry = isFree
+    ? [requestedModel, ...FREE_MODELS.filter(m => m !== requestedModel)]
     : [requestedModel];
 
   let lastError: Error | null = null;
