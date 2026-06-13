@@ -24,7 +24,7 @@ export default function ChatHistory({
   onNewChat,
 }: ChatHistoryProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

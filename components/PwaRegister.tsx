@@ -105,7 +105,7 @@ export function PwaRegister() {
       {pushSupported && !pushEnabled && !showInstall && (
         <button
           onClick={subscribeToPush}
-          className="fixed bottom-4 right-4 z-50 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg shadow-lg text-xs"
+          className="fixed bottom-4 left-4 z-50 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg shadow-lg text-xs"
         >
           🔔 Уведомления
         </button>
