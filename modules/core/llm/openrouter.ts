@@ -5,6 +5,19 @@ const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 export const DEFAULT_MODEL = 'openrouter/free';
 
+const FREE_MODELS = [
+  'openrouter/free',
+  'google/gemma-3-1b-it:free',
+  'google/gemma-3-4b-it:free',
+  'meta-llama/llama-3.3-70b-instruct:free',
+  'meta-llama/llama-3.1-8b-instruct:free',
+  'qwen/qwen3-235b-a22b:free',
+  'qwen/qwen3-coder:free',
+  'deepseek/deepseek-r1:free',
+  'deepseek/deepseek-chat-v3-0324:free',
+  'microsoft/phi-4-reasoning-plus:free',
+];
+
 export interface LLMResponse {
   content: string;
   model: string;
@@ -34,50 +47,82 @@ export async function chatCompletion(
     };
   }
 
-  const model = config.model || DEFAULT_MODEL;
+  const requestedModel = config.model || DEFAULT_MODEL;
+  const modelsToTry = requestedModel === 'openrouter/free'
+    ? FREE_MODELS
+    : [requestedModel];
 
-  const body: Record<string, unknown> = {
-    model,
-    messages,
-    temperature: config.temperature ?? 0.7,
-    max_tokens: config.max_tokens ?? 4096,
-  };
+  let lastError: Error | null = null;
 
-  if (tools && tools.length > 0) {
-    body.tools = tools;
-    body.tool_choice = 'auto';
-  }
+  for (const model of modelsToTry) {
+    const body: Record<string, unknown> = {
+      model,
+      messages,
+      temperature: config.temperature ?? 0.7,
+      max_tokens: config.max_tokens ?? 4096,
+    };
 
-  const response = await fetch(OPENROUTER_API_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-      'X-Title': 'AIgent Platform',
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    if (response.status === 429) {
-      const retryMatch = errorBody.match(/retry_after_seconds.*?(\d+)/);
-      const retryAfter = retryMatch ? parseInt(retryMatch[1]) : 25;
-      throw new Error(`RATE_LIMIT:${retryAfter}`);
+    if (tools && tools.length > 0) {
+      body.tools = tools;
+      body.tool_choice = 'auto';
     }
-    throw new Error(`OpenRouter error ${response.status}: ${errorBody}`);
+
+    try {
+      const response = await fetch(OPENROUTER_API_URL, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+          'X-Title': 'AIgent Platform',
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        if (response.status === 429) {
+          console.log(`[LLM] ${model} rate limited, trying next...`);
+          lastError = new Error(`RATE_LIMIT: ${model}`);
+          continue;
+        }
+        if (response.status === 404) {
+          console.log(`[LLM] ${model} not found, trying next...`);
+          lastError = new Error(`404: ${model}`);
+          continue;
+        }
+        throw new Error(`OpenRouter error ${response.status}: ${errorBody}`);
+      }
+
+      const data = await response.json();
+      const choice = data.choices[0];
+
+      if (model !== requestedModel) {
+        console.log(`[LLM] Used fallback model: ${model}`);
+      }
+
+      return {
+        content: choice?.message?.content || '',
+        model: data.model,
+        tool_calls: choice?.message?.tool_calls,
+        usage: data.usage,
+      };
+    } catch (err: any) {
+      if (err.message?.startsWith('RATE_LIMIT:') || err.message?.startsWith('404:')) {
+        lastError = err;
+        continue;
+      }
+      throw err;
+    }
   }
 
-  const data = await response.json();
-  const choice = data.choices[0];
+  if (lastError?.message?.startsWith('RATE_LIMIT:')) {
+    const retryMatch = lastError.message.match(/retry_after_seconds.*?(\d+)/);
+    const retryAfter = retryMatch ? parseInt(retryMatch[1]) : 25;
+    throw new Error(`RATE_LIMIT:${retryAfter}`);
+  }
 
-  return {
-    content: choice?.message?.content || '',
-    model: data.model,
-    tool_calls: choice?.message?.tool_calls,
-    usage: data.usage,
-  };
+  throw lastError || new Error('All models failed');
 }
 
 export async function chatCompletionStream(
@@ -89,25 +134,49 @@ export async function chatCompletionStream(
     throw new Error('OPENROUTER_API_KEY не задан');
   }
 
-  const response = await fetch(OPENROUTER_API_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-      'X-Title': 'AIgent Platform',
-    },
-    body: JSON.stringify({
-      model: config.model || DEFAULT_MODEL,
-      messages,
-      stream: true,
-      temperature: config.temperature ?? 0.7,
-    }),
-  });
+  const requestedModel = config.model || DEFAULT_MODEL;
+  const modelsToTry = requestedModel === 'openrouter/free'
+    ? FREE_MODELS
+    : [requestedModel];
 
-  if (!response.ok || !response.body) {
-    throw new Error(`OpenRouter stream error ${response.status}`);
+  let lastError: Error | null = null;
+
+  for (const model of modelsToTry) {
+    try {
+      const response = await fetch(OPENROUTER_API_URL, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+          'X-Title': 'AIgent Platform',
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          stream: true,
+          temperature: config.temperature ?? 0.7,
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 429 || response.status === 404) {
+          console.log(`[LLM] ${model} ${response.status === 429 ? 'rate limited' : 'not found'}, trying next...`);
+          lastError = new Error(`${response.status}: ${model}`);
+          continue;
+        }
+        throw new Error(`OpenRouter stream error ${response.status}`);
+      }
+
+      return response.body!;
+    } catch (err: any) {
+      if (err.message?.startsWith('429:') || err.message?.startsWith('404:')) {
+        lastError = err;
+        continue;
+      }
+      throw err;
+    }
   }
 
-  return response.body;
+  throw lastError || new Error('All stream models failed');
 }
