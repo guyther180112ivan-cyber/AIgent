@@ -21,7 +21,7 @@ export class RAGModule implements AgentModuleInterface {
 
       if (!lastUserMessage) return ctx;
 
-      const query = lastUserMessage.content.substring(0, 200);
+      const query = (lastUserMessage.content || '').substring(0, 200);
       const supabase = await createServiceClient();
 
       const { data: chunks } = await supabase
