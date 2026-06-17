@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import path from 'path';
 import { verifyToken } from '@/lib/auth';
 
@@ -10,6 +10,7 @@ interface PushSubscription {
     auth: string;
   };
   user_id?: string;
+  expirationTime?: number | null;
 }
 
 const SUBSCRIPTIONS_FILE = path.join(process.cwd(), 'data', 'push-subscriptions.json');
@@ -26,7 +27,6 @@ function readSubscriptions(): PushSubscription[] {
 function writeSubscriptions(subs: PushSubscription[]) {
   const dir = path.dirname(SUBSCRIPTIONS_FILE);
   if (!existsSync(dir)) {
-    const { mkdirSync } = require('fs');
     mkdirSync(dir, { recursive: true });
   }
   writeFileSync(SUBSCRIPTIONS_FILE, JSON.stringify(subs, null, 2));
@@ -34,34 +34,32 @@ function writeSubscriptions(subs: PushSubscription[]) {
 
 export async function POST(request: NextRequest) {
   try {
+    const cookieStore = await request.cookies;
+    const token = cookieStore.get('auth-token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const payload = await verifyToken(token);
+    if (!payload?.userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const sub: PushSubscription = await request.json();
     if (!sub.endpoint || !sub.keys?.p256dh || !sub.keys?.auth) {
       return NextResponse.json({ error: 'Invalid subscription' }, { status: 400 });
     }
 
-    let userId: string | undefined;
-    try {
-      const cookieStore = await request.cookies;
-      const token = cookieStore.get('auth-token')?.value;
-      if (token) {
-        const payload = await verifyToken(token);
-        if (payload) userId = payload.userId;
-      }
-    } catch {}
-
+    const userId = payload.userId;
     const subs = readSubscriptions();
-    const exists = subs.some((s) => s.endpoint === sub.endpoint);
-    if (!exists) {
+    const existingIndex = subs.findIndex((s) => s.endpoint === sub.endpoint);
+
+    if (existingIndex !== -1) {
+      subs[existingIndex] = { ...sub, user_id: userId };
+    } else {
       subs.push({ ...sub, user_id: userId });
-      writeSubscriptions(subs);
-    } else if (userId) {
-      const idx = subs.findIndex((s) => s.endpoint === sub.endpoint);
-      if (idx !== -1 && !subs[idx].user_id) {
-        subs[idx].user_id = userId;
-        writeSubscriptions(subs);
-      }
     }
 
+    writeSubscriptions(subs);
     return NextResponse.json({ status: 'subscribed' });
   } catch {
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });

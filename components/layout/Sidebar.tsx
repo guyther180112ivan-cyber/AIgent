@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import {
   Bot,
   Zap,
@@ -15,6 +16,7 @@ import {
   X,
   Download,
   BellRing,
+  BellOff,
 } from 'lucide-react';
 import { usePwaInstall, usePushSubscription } from '@/components/PwaRegister';
 
@@ -41,7 +43,15 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { canInstall, install } = usePwaInstall();
-  const { supported: pushSupported, enabled: pushEnabled, subscribe } = usePushSubscription();
+  const {
+    supported: pushSupported,
+    enabled: pushEnabled,
+    permission: pushPermission,
+    subscribe,
+    unsubscribe,
+  } = usePushSubscription();
+
+  const [testingPush, setTestingPush] = useState(false);
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -127,14 +137,61 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             <Download className="w-4 h-4 flex-shrink-0" />
             <span>Установить приложение</span>
           </button>
-          {pushSupported && !pushEnabled && (
-            <button
-              onClick={subscribe}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-gray-800"
-            >
-              <BellRing className="w-4 h-4 flex-shrink-0" />
-              <span>Включить уведомления</span>
-            </button>
+          {pushSupported && (
+            <>
+              {pushEnabled ? (
+                <button
+                  onClick={unsubscribe}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-gray-800"
+                >
+                  <BellOff className="w-4 h-4 flex-shrink-0" />
+                  <span>Отключить уведомления</span>
+                </button>
+              ) : pushPermission === 'denied' ? (
+                <div className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 cursor-not-allowed">
+                  <BellOff className="w-4 h-4 flex-shrink-0" />
+                  <span>Уведомления заблокированы</span>
+                </div>
+              ) : (
+                <button
+                  onClick={subscribe}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-gray-800"
+                >
+                  <BellRing className="w-4 h-4 flex-shrink-0" />
+                  <span>Включить уведомления</span>
+                </button>
+              )}
+              {pushEnabled && (
+                <button
+                  onClick={async () => {
+                    setTestingPush(true);
+                    try {
+                      const res = await fetch('/api/push/send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                          title: 'Тест уведомления',
+                          body: 'Если вы видите это, push-уведомления работают!',
+                          data: { url: '/scheduler' },
+                        }),
+                      });
+                      const result = await res.json();
+                      alert(`Отправлено: ${result.sent || 0}`);
+                    } catch {
+                      alert('Ошибка отправки тестового уведомления');
+                    } finally {
+                      setTestingPush(false);
+                    }
+                  }}
+                  disabled={testingPush}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-gray-800 disabled:opacity-50"
+                >
+                  <BellRing className="w-4 h-4 flex-shrink-0" />
+                  <span>{testingPush ? 'Отправка...' : 'Отправить тест'}</span>
+                </button>
+              )}
+            </>
           )}
         </div>
 

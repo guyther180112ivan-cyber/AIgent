@@ -58,5 +58,15 @@
     "is_active": true,
     "id": "6278b5ef-d364-4671-8e85-2c81b49fb5c5",
     "created_at": "2026-06-13T07:54:20.296Z"
+  },
+  {
+    "user_id": "8eae181f-f2f9-4d7b-8142-7ec649ca7ab6",
+    "name": "TestBot",
+    "description": "",
+    "system_prompt": "Ты помощник. Отвечай кратко.",
+    "model": "openrouter/free",
+    "is_active": true,
+    "id": "b6d891ec-e5ed-4984-922c-5041603ec6a6",
+    "created_at": "2026-06-13T08:13:52.133Z"
   }
 ]

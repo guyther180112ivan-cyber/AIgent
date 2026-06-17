@@ -1,4 +1,4 @@
-const CACHE = 'aigent-cache-v1';
+const CACHE = 'aigent-cache-v2';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -47,9 +47,9 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'AIgent';
   const options = {
     body: data.body || '',
-    icon: '/icons/icon-192.svg',
-    badge: '/icons/icon-192.svg',
-    data: data.data || {},
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    data: data.data || { url: '/' },
     vibrate: [200, 100, 200],
     requireInteraction: false,
   };

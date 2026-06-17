@@ -4,5 +4,11 @@
     "username": "Guyther",
     "password": "$2b$10$u6z4eaLnMPaqUyFHDJnJuekWcy3LiTpi7.uPMoR1sCqOWnGHQual.",
     "createdAt": "2026-04-04T07:25:57.130Z"
+  },
+  {
+    "id": "8eae181f-f2f9-4d7b-8142-7ec649ca7ab6",
+    "username": "test",
+    "password": "$2b$10$N5D40NW8D/uQ2RcMM.athukr0xqsAI.sppeSWfdk/wxZgVIN7t2da",
+    "createdAt": "2026-06-13T08:10:23.244Z"
   }
 ]

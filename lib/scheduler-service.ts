@@ -2,12 +2,12 @@ import cron, { ScheduledTask as CronJob } from 'node-cron';
 import { getActiveTasks, incrementRunCount, resetDailyCounts } from '@/lib/scheduler';
 import { getAgentById } from '@/lib/agents';
 import {
-  getConversationById,
   getLastConversationForAgent,
   createConversation,
   updateConversation,
 } from '@/lib/conversations';
 import { createMessage, getMessagesByConversationId } from '@/lib/messages';
+import { sendPushNotificationToUser } from '@/lib/push-notifications';
 import { AgentRuntime } from '@/modules/core/agent-runtime';
 import { ChatCompletionMessage, ScheduledTask } from '@/types';
 
@@ -137,60 +137,15 @@ class SchedulerService {
 
       console.log(`[Scheduler] Task ${taskId} completed. Response length: ${response.content.length}`);
 
-      this.sendPushNotification(task, agent.name, response.content);
-    } catch (err) {
-      console.error(`[Scheduler] Error executing task ${taskId}:`, err);
-    }
-  }
-
-  private async sendPushNotification(task: ScheduledTask, agentName: string, content: string) {
-    try {
-      const { existsSync, readFileSync } = await import('fs');
-      const pathMod = await import('path');
-      const subsFile = pathMod.join(process.cwd(), 'data', 'push-subscriptions.json');
-
-      if (!existsSync(subsFile)) return;
-
-      const subs = JSON.parse(readFileSync(subsFile, 'utf-8'));
-      const userSubs = subs.filter((s: any) => s.user_id === task.user_id);
-
-      if (userSubs.length === 0) return;
-
-      const webpush = await import('web-push');
-      const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
-      const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || '';
-
-      if (!vapidPublicKey || !vapidPrivateKey) return;
-
-      webpush.default.setVapidDetails(
-        `mailto:${process.env.VAPID_EMAIL || 'admin@example.com'}`,
-        vapidPublicKey,
-        vapidPrivateKey
-      );
-
-      const payload = JSON.stringify({
-        title: agentName,
-        body: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
+      await sendPushNotificationToUser(task.user_id, {
+        title: agent.name,
+        body: response.content.substring(0, 100) + (response.content.length > 100 ? '...' : ''),
         icon: '/icons/icon-192.png',
         badge: '/icons/icon-192.png',
+        data: { url: `/agents/${task.agent_id}` },
       });
-
-      for (const sub of userSubs) {
-        try {
-          await webpush.default.sendNotification(
-            { endpoint: sub.endpoint, keys: sub.keys, expirationTime: sub.expirationTime },
-            payload
-          );
-        } catch (err: any) {
-          if (err.statusCode === 410) {
-            const filtered = subs.filter((s: any) => s.endpoint !== sub.endpoint);
-            const { writeFileSync } = await import('fs');
-            writeFileSync(subsFile, JSON.stringify(filtered, null, 2));
-          }
-        }
-      }
     } catch (err) {
-      console.error('[Scheduler] Push notification error:', err);
+      console.error(`[Scheduler] Error executing task ${taskId}:`, err);
     }
   }
 }

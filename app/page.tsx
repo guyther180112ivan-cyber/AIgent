@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
+import LoginPage from './login/page';
 
 export default async function Home() {
   const cookieStore = await cookies();
@@ -13,5 +14,5 @@ export default async function Home() {
     }
   }
 
-  redirect('/login');
+  return <LoginPage />;
 }
